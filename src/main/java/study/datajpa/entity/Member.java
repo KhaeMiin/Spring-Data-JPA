@@ -1,16 +1,13 @@
 package study.datajpa.entity;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import javax.persistence.*;
 
 import static lombok.AccessLevel.*;
 
 @Entity
-@Getter
+@Getter @Setter
 @NoArgsConstructor(access = PROTECTED) //접근제어자 복습: 같은 패키지, 다른 패키지 자손까지
 @ToString(of = {"id", "username", "age"})
 public class Member {
