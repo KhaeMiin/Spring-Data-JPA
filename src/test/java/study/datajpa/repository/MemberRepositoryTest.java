@@ -45,7 +45,8 @@ class MemberRepositoryTest {
         memberRepository.save(member2);
 
         //단건 조회 검증
-        Member findMember1 = memberRepository.findById(member1.getId()).get();
+        Optional<Member> byId = memberRepository.findById(member1.getId());
+        Member findMember1 = byId.get();
         Member findMember2 = memberRepository.findById(member2.getId()).get();
 
         assertThat(findMember1).isEqualTo(member1);
@@ -89,7 +90,7 @@ class MemberRepositoryTest {
     }
 
     @Test
-    void namedQuery() {
+    void testNameQuery() {
         Member member1 = new Member("AAA", 10);
         Member member2 = new Member("AAA", 20);
         memberRepository.save(member1);
@@ -99,4 +100,16 @@ class MemberRepositoryTest {
         Member findMember = result.get(0);
         assertThat(findMember).isEqualTo(member1);
     }
+    @Test
+    void testQuery() {
+        Member member1 = new Member("AAA", 10);
+        Member member2 = new Member("AAA", 20);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        List<Member> result = memberRepository.findUser("AAA", 10);
+        assertThat(result.get(0)).isEqualTo(member1);
+    }
+
+
 }
