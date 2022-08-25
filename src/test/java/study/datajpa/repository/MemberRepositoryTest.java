@@ -4,6 +4,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -174,4 +178,47 @@ class MemberRepositoryTest {
 
         System.out.println("findMember = " + findMember);
     }
+
+    @Test
+    void paging() {
+        //given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+
+        int age = 10;
+
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "username"));
+        //페이지를 1이 아닌 0부터 시작, 한 페이지에 3개의 데이터를 가져오겠다
+
+        //when
+
+        //page 단점: 성능 자체가 원래 느리다..이유: totalCount 쿼리가 나가기 때문 (join등 쿼리가 길어질 수록 더더더욱 성능이 안좋아짐)
+        //성능 향상 방법: memberRepository에 findByAge 메소드에 @Query를 사용 + countQuery를 분리한다.
+        //결론: 쿼리가 복잡해지는 경우 countQuery를 사용하여 쿼리를 분리하자! (간단한 쿼리 경우 그냥 사용해도 됨)
+        Page<Member> page = memberRepository.findByAge(age, pageRequest); //반환타입을 Page로 받으면 totalCount를 따로 구할 필요가 없음
+//        Slice<Member> page = memberRepository.findByAge(age, pageRequest); //totalCount를 구하지 않는다.
+
+        Page<MemberDto> toMap = page.map(m -> new MemberDto(m.getId(), m.getUsername(), null));
+
+        //then
+        List<Member> content = page.getContent(); //page에 있는 컨텐츠 가져오기
+        long totalElements = page.getTotalElements(); //이렇게 totalCount를 구해준다 알아서
+
+        for (Member member : content) {
+            System.out.println("member = " + member);
+
+        }
+        System.out.println("totalElements = " + totalElements);
+
+        assertThat(content.size()).isEqualTo(3);
+        assertThat(page.getTotalElements()).isEqualTo(5);
+        assertThat(page.getNumber()).isEqualTo(0 ); //페이지 번호
+        assertThat(page.getTotalPages()).isEqualTo(2); //총 페이지 수
+        assertThat(page.isFirst()).isTrue(); //첫번쨰 페이지인지
+        assertThat(page.hasNext()).isTrue(); //다음 페이지가 있는지
+    }
+
 }
