@@ -2,7 +2,9 @@ package study.datajpa.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import study.datajpa.dto.MemberDto;
@@ -54,4 +56,29 @@ public interface MemberRepository extends JpaRepository<Member, Long> { //pk: Lo
             countQuery = "select count(m) from Member m") //countQuery로 쿼리를 분리하여 단순히 (join없이) member만 count할 수 있도록
     Page<Member> findByAge(int age, Pageable pageable);
 
+    //벌크성 쿼리
+    @Modifying(clearAutomatically = true) //JPA의 executeUpdate()와 같음 (없으면 resultList, singleResult 반환됨)
+    //clearAutomatically = true: entitymanager의 clear()와 같은 기능 제공
+    @Query("update Member m set m.age = m.age + 1 where m.age >= :age")
+    int bulkAgePlus(@Param("age") int age);
+
+
+    //fetch join
+    @Query("select m from Member m left join fetch m.team") //한방 쿼리로 다 끌고옴
+    List<Member> findMemberFetchJoin();
+
+    //EntityGraph를 사용하여 fetch join 해결하기
+    @Override
+    @EntityGraph(attributePaths = {"team"})
+    List<Member> findAll();
+
+    @EntityGraph(attributePaths = {"team"})
+    @Query("select m from Member m")
+    List<Member> findMemberEntityGraph();
+
+    @EntityGraph(attributePaths = ("team"))
+    List<Member> findEntityGraphByUsername(@Param("username") String username);
+
+//    @EntityGraph("Member.all") //잘 사용하지 않음
+//    List<Member> findEntityGraphByUsername(@Param("username") String username);
 }

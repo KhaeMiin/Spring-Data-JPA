@@ -14,6 +14,8 @@ import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +30,8 @@ class MemberRepositoryTest {
 
     @Autowired MemberRepository memberRepository;
     @Autowired TeamRepository teamRepository;
+    @PersistenceContext
+    private EntityManager em;
 
     @Test
     void testMember() {
@@ -220,5 +224,60 @@ class MemberRepositoryTest {
         assertThat(page.isFirst()).isTrue(); //첫번쨰 페이지인지
         assertThat(page.hasNext()).isTrue(); //다음 페이지가 있는지
     }
+    @Test
+    void bulkUpdate() {
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 19));
+        memberRepository.save(new Member("member3", 20));
+        memberRepository.save(new Member("member4", 21));
+        memberRepository.save(new Member("member5", 40));
 
+        //when
+        int resultCount = memberRepository.bulkAgePlus(20); //20살 이상인 데이터는 +1 해!
+
+        List<Member> result = memberRepository.findByUsername("member5");
+        Member member = result.get(0);
+        System.out.println("member = " + member);//아직 벌그연산이 DB에 저장되지 않았기 때문에 40살이 나옴  (EntityManager 사용하여 clear()를 해주어야 벌크연산 반영)
+        //혹은  Repository에서 @Modifying(clearAutomatically = true)을 해주면 clear()와 동일한 기능을 제공
+
+        //then
+        assertThat(resultCount).isEqualTo(3);
+    }
+
+    @Test
+    void findMemberLazy() {
+        //given
+
+        //member1 -> teamA
+        //member1 -> teamB
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+        Member member1 = new Member("member1", 10, teamA);
+        Member member3 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 10, teamB);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        //select Member (Team은 가짜객체만 가져온다.)
+        //그래서 findAll()을 오버라이딩 해서  @EntityGraph(attributePaths = {"team"})를 추가해준다.
+//        List<Member> members = memberRepository.findAll();
+        List<Member> members = memberRepository.findEntityGraphByUsername("member1");
+
+        //fetchjoin사용해보기
+//        List<Member> members = memberRepository.findMemberFetchJoin(); //한방쿼리로 team까지 다 값을 끌고와서 값을 채움(Proxy객체가 아닌 진짜 entity 객체)
+
+        for (Member member : members) {
+            System.out.println("member = " + member.getUsername());
+            System.out.println("member.getTeam().getClass() = " + member.getTeam().getClass());
+            System.out.println("member.getTeam().getName() = " + member.getTeam().getName()); //fetch조인,@EntityGraph을 사용하지 않은 경우: 직접사용시 db에 쿼리를 날려서 데이터를 가져온다. (n+1문제가 생김)
+        }
+
+
+    }
 }
