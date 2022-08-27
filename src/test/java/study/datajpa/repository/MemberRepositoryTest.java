@@ -277,7 +277,32 @@ class MemberRepositoryTest {
             System.out.println("member.getTeam().getClass() = " + member.getTeam().getClass());
             System.out.println("member.getTeam().getName() = " + member.getTeam().getName()); //fetch조인,@EntityGraph을 사용하지 않은 경우: 직접사용시 db에 쿼리를 날려서 데이터를 가져온다. (n+1문제가 생김)
         }
+    }
 
+    @Test
+    void queryHint() {
+        //given
+        Member member1 = new Member("member1", 10);
+        memberRepository.save(member1);
+        em.flush(); //DB에 쿼리를 날림(1차캐쉬(영속성 컨텍스트) 남아있음) > 여기서 더티체크 일어남
+        em.clear(); //영속성 컨텍스트 다 날림(1차캐쉬 다 날라감)
 
+        //when
+        Member findMember = memberRepository.findReadOnlyByUsername("member1"); //QueryHint를 사용하여 읽기전용(스냅샷을 만들지 않음)
+        findMember.setUsername("member2");
+
+        em.flush(); //변경 감지의 치명적인 단점:
+    }
+
+    @Test
+    void lock() {
+        //given
+        Member member1 = new Member("member1", 10);
+        memberRepository.save(member1);
+        em.flush(); //DB에 쿼리를 날림(1차캐쉬(영속성 컨텍스트) 남아있음) > 여기서 더티체크 일어남
+        em.clear(); //영속성 컨텍스트 다 날림(1차캐쉬 다 날라감)
+
+        //when
+        List<Member> result = memberRepository.findLockByUsername("member1");
     }
 }
