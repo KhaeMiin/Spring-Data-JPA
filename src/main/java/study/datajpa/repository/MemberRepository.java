@@ -17,7 +17,7 @@ import java.util.Optional;
  * JPARepository
  * 메소드명으로 쿼리 생성
  */
-public interface MemberRepository extends JpaRepository<Member, Long> { //pk: Long
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom { //pk: Long
 
     List<Member> findByUsernameAndAgeGreaterThan(String username, int age);
 

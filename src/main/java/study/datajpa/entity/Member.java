@@ -15,7 +15,7 @@ import static lombok.AccessLevel.*;
         query="select m from Member m where m.username = :username"
 )
 @NamedEntityGraph(name = "Member.all", attributeNodes = @NamedAttributeNode("team")) //잘 사용하진 않음
-public class Member {
+public class Member extends BaseEntity {
 
     @Id
     @GeneratedValue //pk값을 jpa가 알아서
